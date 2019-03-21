@@ -1,12 +1,13 @@
 #!/bin/bash
 
-serving_dir="vendor/github.com/knative/serving"
-serving_branch="release-0.4"
+BRANCH=${1:-master}
 
-# Checkout upstream version
+serving_dir="vendor/github.com/knative/serving"
+
+echo "Cloning '$BRANCH' branch of knative/serving"
 rm -rf $serving_dir
-git clone --depth 1 --branch $serving_branch https://github.com/knative/serving.git $serving_dir
+git clone --depth 1 --branch "$BRANCH" https://github.com/knative/serving.git $serving_dir
 rm -rf $serving_dir/.git
 
-# Apply all patches
+echo "Applying patches"
 patch -p1 < vendor-patches/*.patch
