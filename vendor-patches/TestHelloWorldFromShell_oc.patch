@@ -1,0 +1,60 @@
+diff --git a/vendor/github.com/knative/serving/test/e2e/helloworld_shell_test.go b/vendor/github.com/knative/serving/test/e2e/helloworld_shell_test.go
+index d63f908..0f13293 100644
+--- a/vendor/github.com/knative/serving/test/e2e/helloworld_shell_test.go
++++ b/vendor/github.com/knative/serving/test/e2e/helloworld_shell_test.go
+@@ -49,17 +49,17 @@ func noStderrShell(name string, arg ...string) string {
+ 	return string(out)
+ }
+ 
+-func cleanup(yamlFilename string) {
+-	exec.Command("kubectl", "delete", "-f", yamlFilename).Run()
++func cleanup(yamlFilename string, logger *logging.BaseLogger) {
++	exec.Command("oc", "delete", "-f", yamlFilename).Run()
+ 	os.Remove(yamlFilename)
+ }
+ 
+ func serviceHostname() string {
+-	return noStderrShell("kubectl", "get", "rt", "route-example", "-o", "jsonpath={.status.domain}", "-n", test.ServingNamespace)
++	return noStderrShell("oc", "get", "rt", "route-example", "-o", "jsonpath={.status.domain}", "-n", test.ServingNamespace)
+ }
+ 
+ func ingressAddress(gateway string, addressType string) string {
+-	return noStderrShell("kubectl", "get", "svc", gateway, "-n", "istio-system",
++	return noStderrShell("oc", "get", "svc", gateway, "-n", "istio-system",
+ 		"-o", fmt.Sprintf("jsonpath={.status.loadBalancer.ingress[*]['%s']}", addressType))
+ }
+ 
+@@ -82,13 +82,13 @@ func TestHelloWorldFromShell(t *testing.T) {
+ 
+ 	// Populate manifets file with the real path to the container
+ 	yamlBytes, err := ioutil.ReadFile(appYaml)
+-
+ 	if err != nil {
+ 		t.Fatalf("Failed to read file %s: %v", appYaml, err)
+ 	}
+ 
+ 	content := strings.Replace(string(yamlBytes), yamlImagePlaceholder, imagePath, -1)
+-	content = strings.Replace(string(content), namespacePlaceholder, test.ServingNamespace, -1)
++	content = strings.Replace(string(content), "namespace: "+namespacePlaceholder,
++		"namespace: "+test.ServingNamespace, -1)
+ 
+ 	if _, err = newYaml.WriteString(content); err != nil {
+ 		t.Fatalf("Failed to write new manifest: %v", err)
+@@ -97,12 +97,12 @@ func TestHelloWorldFromShell(t *testing.T) {
+ 		t.Fatalf("Failed to close new manifest file: %v", err)
+ 	}
+ 
+-	logger.Infof("Manifest file is %q", newYamlFilename)
+-	logger.Info("Deploying using kubectl")
++	logger.Infof("Manifest file is '%s'", newYamlFilename)
++	logger.Info("Deploying using oc")
+ 
+-	// Deploy using kubectl
+-	if output, err := exec.Command("kubectl", "apply", "-f", newYamlFilename).CombinedOutput(); err != nil {
+-		t.Fatalf("Error running kubectl: %v", strings.TrimSpace(string(output)))
++	// Deploy using oc
++	if output, err := exec.Command("oc", "apply", "-f", newYamlFilename).CombinedOutput(); err != nil {
++		t.Fatalf("Error running oc: %v", strings.TrimSpace(string(output)))
+ 	}
+ 
+ 	logger.Info("Waiting for ingress to come up")
